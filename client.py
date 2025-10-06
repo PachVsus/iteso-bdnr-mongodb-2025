@@ -1,92 +1,65 @@
 #!/usr/bin/env python3
-import argparse
-import logging
-import os
+# client.py
+"""
+Small client to exercise the PUT (update) and DELETE endpoints.
+Run the API first:
+    uvicorn resources:app --reload --port 8000
+
+Then run this script:
+    python client.py
+"""
 import requests
+import json
 
+BASE_URL = "http://localhost:8000"  # Unificado al mismo puerto que el servidor principal
+UPDATE_URL = f"{BASE_URL}/books/{{book_id}}"
+DELETE_URL = f"{BASE_URL}/books/{{book_id}}"
 
-# Set logger
-log = logging.getLogger()
-log.setLevel('INFO')
-handler = logging.FileHandler('books.log')
-handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-log.addHandler(handler)
+def update_book(book_id: str, update_data: dict):
+    url = UPDATE_URL.format(book_id=book_id)
+    resp = requests.put(url, json=update_data, timeout=10)
+    try:
+        data = resp.json()
+    except Exception:
+        data = {"raw_text": resp.text}
+    print(f"[PUT] {url} -> {resp.status_code}")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+    return resp
 
-# Read env vars related to API connection
-BOOKS_API_URL = os.getenv("BOOKS_API_URL", "http://localhost:8000")
-
-
-
-def print_book(book):
-    for k in book.keys():
-        print(f"{k}: {book[k]}")
-    print("="*50)
-
-def list_books(rating):
-    suffix = "/books"
-    endpoint = BOOKS_API_URL + suffix
-    params = {
-        "rating": rating
-    }
-    response = requests.get(endpoint, params=params)
-    if response.ok:
-        json_resp = response.json()
-        for book in json_resp:
-            print_book(book)
-    else:
-        print(f"Error: {response}")
-
-
-def get_book_by_id(id):
-    suffix = f"/books/{id}"
-    endpoint = BOOKS_API_URL + suffix
-    response = requests.get(endpoint)
-    if response.ok:
-        json_resp = response.json()
-        print_book(json_resp)
-    else:
-        print(f"Error: {response}")
-
-
-def update_book(id):
-    pass
-
-
-def delete_book(id):
-    pass
-
-
-def main():
-    log.info(f"Welcome to books catalog. App requests to: {BOOKS_API_URL}")
-
-    parser = argparse.ArgumentParser()
-
-    list_of_actions = ["search", "get", "update", "delete"]
-    parser.add_argument("action", choices=list_of_actions,
-            help="Action to be user for the books library")
-    parser.add_argument("-i", "--id",
-            help="Provide a book ID which related to the book action", default=None)
-    parser.add_argument("-r", "--rating",
-            help="Search parameter to look for books with average rating equal or above the param (0 to 5)", default=None)
-
-    args = parser.parse_args()
-
-    if args.id and not args.action in ["get", "update", "delete"]:
-        log.error(f"Can't use arg id with action {args.action}")
-        exit(1)
-
-    if args.rating and args.action != "search":
-        log.error(f"Rating arg can only be used with search action")
-        exit(1)
-
-    if args.action == "search":
-        list_books(args.rating)
-    elif args.action == "get" and args.id:
-        get_book_by_id(args.id)
-    elif args.action == "update":
-        update_book(args.id)
-    elif args.action == "delete":
-        delete_book(args.id)
+def delete_book(book_id: str):
+    url = DELETE_URL.format(book_id=book_id)
+    resp = requests.delete(url, timeout=10)
+    try:
+        data = resp.json()
+    except Exception:
+        data = {"raw_text": resp.text}
+    print(f"[DELETE] {url} -> {resp.status_code}")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
+    return resp
 
 if __name__ == "__main__":
-    main()
+    # Using a real ObjectId from the database
+    example_id = "68e141b181e418fc08a87489"  # Clean Architecture book ID
+
+    print("=== TESTING UPDATE OPERATION ===")
+    # 1) Example update
+    update_payload = {
+        "title": "Clean Architecture (Updated via API)",
+        "price": 499.0,
+        "genres": ["Software", "Architecture", "Design"],
+        "stock": 25
+    }
+    update_book(example_id, update_payload)
+    
+    print("\n=== VERIFYING UPDATE ===")
+    # Verify the update by getting the book
+    get_url = f"{BASE_URL}/books/{example_id}"
+    resp = requests.get(get_url)
+    print(f"[GET] {get_url} -> {resp.status_code}")
+    if resp.status_code == 200:
+        print(json.dumps(resp.json(), indent=2, ensure_ascii=False))
+
+    print("\n=== TESTING DELETE OPERATION ===")
+    # Use the second book for deletion test
+    delete_id = "68e140cef8e83da8534b7e13"  # The Pragmatic Programmer ID
+    delete_book(delete_id)

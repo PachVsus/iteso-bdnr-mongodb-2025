@@ -1,4 +1,4 @@
-falcon
-pymongo
-uvicorn
-requests
+falcon==3.1.1
+pymongo==4.8.0
+uvicorn[standard]==0.30.1
+requests==2.32.3

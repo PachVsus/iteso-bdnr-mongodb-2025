@@ -24,7 +24,7 @@ pip install -r requirements.txt
 
 ### To run the API service
 ```
-python -m uvicorn main:app --reload
+python -m uvicorn main:app --reload --port 8000
 ```
 
 ### To load data
@@ -38,3 +38,26 @@ Once your API service is running (see step above), run the populate script
 cd data/
 python populate.py
 ```
+
+### Troubleshooting
+
+1. Selecciona el intérprete correcto en VS Code:
+	- Ctrl+Shift+P -> "Python: Select Interpreter" -> elige `.venv` dentro del proyecto.
+2. Si Pylance marca `reportMissingImports` para `falcon`, `pymongo`, `requests` o `bson`:
+	- Asegúrate de haber activado el entorno: `\.venv\Scripts\Activate.ps1`.
+	- Reinstala dependencias: `pip install -r requirements.txt`.
+	- No instales el paquete externo `bson`; viene incluido con `pymongo`.
+3. MongoDB no accesible:
+	- Verifica contenedor: `docker ps` y que el puerto 27017 esté escuchando.
+4. Puerto 8000 en uso:
+	- Cambia a otro puerto: `uvicorn main:app --reload --port 8001` y ajusta `BASE_URL` en scripts.
+5. Verificar imports rápidamente:
+	- `python -c "import falcon, pymongo, requests, uvicorn, bson; print('OK')"`
+
+### Scripts útiles
+
+- `data/populate.py`: carga libros desde CSV.
+- `client.py`: prueba rápida de endpoints PUT/DELETE.
+- `test_api.py`: inserta datos y prueba GET/PUT/DELETE vía HTTP.
+- `test_direct.py`: pruebas directas sobre la base sin levantar el servidor.
+
